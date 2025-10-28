@@ -9,8 +9,15 @@ import torch
 from collections import defaultdict, OrderedDict
 import os
 import warnings
+import folder_paths
 
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+
+# 注册Excel文件夹
+excel_folder = os.path.join(folder_paths.get_input_directory(), "excel_files")
+if not os.path.exists(excel_folder):
+    os.makedirs(excel_folder)
+folder_paths.add_model_folder_path("excel_files", excel_folder)
 
 class ExcelSKULoader:
     """
@@ -26,12 +33,21 @@ class ExcelSKULoader:
     
     @classmethod
     def INPUT_TYPES(cls):
+        # 获取excel_files文件夹中的所有Excel文件
+        excel_files = []
+        try:
+            excel_files = [f for f in os.listdir(excel_folder)
+                          if f.endswith(('.xlsx', '.xls', '.xlsm'))]
+        except:
+            pass
+
+        if not excel_files:
+            excel_files = ["[请将Excel文件放入input/excel_files文件夹]"]
+
         return {
             "required": {
-                "excel_path": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "placeholder": "Excel文件路径"
+                "excel_file": (excel_files, {
+                    "default": excel_files[0] if excel_files else ""
                 }),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
@@ -92,10 +108,15 @@ class ExcelSKULoader:
     CATEGORY = "🎨 Smart Collage/Excel"
     OUTPUT_NODE = False
     OUTPUT_IS_LIST = (True, True, False)  # images和labels输出为列表
-    
-    def load_sku_data(self, excel_path, sheet_name, combined_sku_col, sku_col, 
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        # 如果上传了新文件，重新执行
+        return float("nan")
+
+    def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
                      pcs_col, url_col, start_row, use_cache=True, cache_size=100,
-                     label_format="×{pcs}", output_mode="by_combined_sku", 
+                     label_format="×{pcs}", output_mode="by_combined_sku",
                      filter_combined_sku=""):
         
         self._cache_max_size = cache_size
@@ -109,13 +130,18 @@ class ExcelSKULoader:
             print(f"📊 缓存状态: {'启用' if use_cache else '禁用'}")
             print(f"📦 当前缓存: {len(self._image_cache)}/{self._cache_max_size} 张图片")
             print(f"🔄 输出模式: {output_mode}")
-            
-            # 1. 读取Excel
-            print(f"\n📖 读取Excel: {excel_path}")
-            if not os.path.exists(excel_path):
-                raise FileNotFoundError(f"Excel文件不存在: {excel_path}")
-            
-            df = pd.read_excel(excel_path, sheet_name=sheet_name, header=None)
+
+            # 1. 读取Excel文件
+            if excel_file.startswith("["):
+                raise ValueError("请将Excel文件放入 ComfyUI/input/excel_files/ 文件夹中")
+
+            file_path = os.path.join(excel_folder, excel_file)
+            print(f"\n📖 读取Excel文件: {excel_file}")
+
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Excel文件不存在: {file_path}")
+
+            df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
             print(f"   ✅ 成功读取 {len(df)} 行数据")
             
             # 2. 解析SKU分组

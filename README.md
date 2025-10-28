@@ -52,6 +52,16 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 ## Usage
 
+### Upload Excel File
+
+**For remote ComfyUI environments (recommended):**
+
+1. Place your Excel file in the `ComfyUI/input/excel_files/` folder
+2. The file will appear in the dropdown list in the node
+3. Select your Excel file from the dropdown
+
+**Note**: The `input/excel_files/` folder is automatically created when you first load the node. If you don't see your file in the dropdown, refresh the node or restart ComfyUI.
+
 ### Excel File Format
 
 Your Excel file should have the following columns (default):
@@ -72,7 +82,7 @@ Your Excel file should have the following columns (default):
 
 #### Required Parameters
 
-- **excel_path**: Path to your Excel file
+- **excel_file**: Select your Excel file from the dropdown (files in `ComfyUI/input/excel_files/`)
 - **sheet_name**: Name of the worksheet (default: "Sheet1")
 - **combined_sku_col**: Column letter for combined SKU (default: "A")
 - **sku_col**: Column letter for individual SKU (default: "B")
@@ -103,11 +113,13 @@ Your Excel file should have the following columns (default):
 
 ### Example Workflow
 
-1. Add the "Excel SKU Loader" node to your ComfyUI workflow
-2. Configure the Excel file path and column mappings
-3. Connect the image output to your collage/layout nodes
-4. Connect the labels output to text overlay nodes
-5. Run the workflow!
+1. Place your Excel file in `ComfyUI/input/excel_files/` folder
+2. Add the "Excel SKU Loader" node to your ComfyUI workflow
+3. Select your Excel file from the dropdown
+4. Configure the sheet name and column mappings
+5. Connect the image output to your collage/layout nodes
+6. Connect the labels output to text overlay nodes
+7. Run the workflow!
 
 ## Image Processing Details
 
@@ -132,8 +144,11 @@ This ensures all images in a batch have uniform dimensions, preventing dimension
 
 ### Common Issues
 
-**Problem**: "Excel file not found"
-- **Solution**: Check the excel_path is absolute or relative to ComfyUI root
+**Problem**: "Excel file not found" or "Please place Excel file in folder"
+- **Solution**: Make sure your Excel file is in the `ComfyUI/input/excel_files/` folder and refresh the node
+
+**Problem**: "File doesn't appear in dropdown"
+- **Solution**: Restart ComfyUI or check that the file has a valid extension (.xlsx, .xls, .xlsm)
 
 **Problem**: "No valid SKU groups found"
 - **Solution**: Verify column letters match your Excel layout and start_row is correct
@@ -182,13 +197,18 @@ This project is open source and available under the MIT License.
 
 ## Changelog
 
+### v1.1.0 (2025-01-XX)
+- Added file upload via dropdown selection
+- Files are now loaded from `ComfyUI/input/excel_files/` folder
+- Improved compatibility with remote ComfyUI environments
+- Auto-resize and padding for uniform image dimensions
+
 ### v1.0.0 (2024-01-XX)
 - Initial release
 - Excel SKU data loading
 - Image downloading with caching
 - Batch processing by combined SKU
 - Multiple label formats
-- Auto-resize and padding functionality
 
 ## Support
 
