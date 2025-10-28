@@ -33,23 +33,13 @@ class ExcelSKULoader:
     
     @classmethod
     def INPUT_TYPES(cls):
-        # 获取excel_files文件夹中的所有Excel文件
-        excel_files = []
-        try:
-            excel_files = [f for f in os.listdir(excel_folder)
-                          if f.endswith(('.xlsx', '.xls', '.xlsm'))]
-            excel_files.sort()  # 按字母排序
-        except:
-            pass
-
-        if not excel_files:
-            excel_files = ["未找到文件，请点击上传按钮"]
+        # 使用 folder_paths 获取文件列表（类似 LoadImage）
+        excel_files = [f for f in os.listdir(excel_folder)
+                       if f.endswith(('.xlsx', '.xls', '.xlsm'))] if os.path.exists(excel_folder) else []
 
         return {
             "required": {
-                "excel_file": (excel_files, {
-                    "default": excel_files[0] if excel_files else ""
-                }),
+                "excel_file": (sorted(excel_files), {"image_upload": True}),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
                     "placeholder": "工作表名称"
@@ -111,9 +101,22 @@ class ExcelSKULoader:
     OUTPUT_IS_LIST = (True, True, False)  # images和labels输出为列表
 
     @classmethod
-    def IS_CHANGED(cls, **kwargs):
-        # 如果上传了新文件，重新执行
+    def IS_CHANGED(cls, excel_file, **kwargs):
+        # 检查文件修改时间
+        file_path = os.path.join(excel_folder, excel_file)
+        if os.path.exists(file_path):
+            return os.path.getmtime(file_path)
         return float("nan")
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, excel_file, **kwargs):
+        # 验证文件是否存在
+        if not excel_file:
+            return "请上传Excel文件"
+        file_path = os.path.join(excel_folder, excel_file)
+        if not os.path.exists(file_path):
+            return f"文件不存在: {excel_file}"
+        return True
 
     def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
                      pcs_col, url_col, start_row, use_cache=True, cache_size=100,
@@ -133,14 +136,12 @@ class ExcelSKULoader:
             print(f"🔄 输出模式: {output_mode}")
 
             # 1. 读取Excel文件
-            if excel_file.startswith("未找到文件"):
-                raise ValueError("未找到Excel文件，请点击节点上的'上传Excel文件'按钮上传文件")
-
             file_path = os.path.join(excel_folder, excel_file)
             print(f"\n📖 读取Excel文件: {excel_file}")
+            print(f"   文件路径: {file_path}")
 
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"Excel文件不存在: {file_path}")
+                raise FileNotFoundError(f"Excel文件不存在: {file_path}\n请通过节点上传按钮上传文件")
 
             df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
             print(f"   ✅ 成功读取 {len(df)} 行数据")

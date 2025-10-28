@@ -54,20 +54,22 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 ### Upload Excel File
 
-**Method 1: Upload via UI (Recommended)**
+**Method 1: Upload via Node (Recommended)**
 
 1. Add the "Excel SKU Loader" node to your workflow
-2. Click the "📁 上传Excel文件" (Upload Excel File) button in the node
-3. Select your Excel file from your local computer (.xlsx, .xls, .xlsm)
-4. The file will be automatically uploaded and appear in the dropdown
+2. Click on the `excel_file` dropdown (it will show a file icon📁)
+3. Click the upload icon or select from existing files
+4. Choose your Excel file from your local computer (.xlsx, .xls, .xlsm)
+5. The file will be automatically uploaded to `ComfyUI/input/excel_files/`
+6. Select the uploaded file from the dropdown
 
-**Method 2: Manual Upload**
+**Method 2: Manual Upload (Alternative)**
 
-1. Place your Excel file in the `ComfyUI/input/excel_files/` folder
+1. Place your Excel file in the `ComfyUI/input/excel_files/` folder manually
 2. Refresh the node or restart ComfyUI
 3. The file will appear in the dropdown list
 
-**Note**: The `input/excel_files/` folder is automatically created when you first load the node. The upload button provides a convenient way to upload files without manual file copying, perfect for remote environments.
+**Note**: The upload mechanism works exactly like ComfyUI's LoadImage node. The `input/excel_files/` folder is automatically created on first use.
 
 ### Excel File Format
 
@@ -121,12 +123,11 @@ Your Excel file should have the following columns (default):
 ### Example Workflow
 
 1. Add the "Excel SKU Loader" node to your ComfyUI workflow
-2. Click the "📁 上传Excel文件" button and select your Excel file
-3. Select the uploaded file from the dropdown (it will auto-select)
-4. Configure the sheet name and column mappings
-5. Connect the image output to your collage/layout nodes
-6. Connect the labels output to text overlay nodes
-7. Run the workflow!
+2. Click on the `excel_file` dropdown and upload your Excel file
+3. Configure the sheet name and column mappings (A, B, C, D for default columns)
+4. Connect the image output to your collage/layout nodes
+5. Connect the labels output to text overlay nodes
+6. Run the workflow!
 
 ## Image Processing Details
 
