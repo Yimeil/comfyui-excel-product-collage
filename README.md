@@ -59,12 +59,12 @@ Your Excel file should have the following columns (default):
 | Combined SKU | SKU | PCS | Image URL |
 |--------------|-----|-----|-----------|
 | COMBO-001 | SKU-A | 2 | https://example.com/image1.jpg |
-|  | SKU-B | 1 | https://example.com/image2.jpg |
+| COMBO-001 | SKU-B | 1 | https://example.com/image2.jpg |
 | COMBO-002 | SKU-C | 3 | https://example.com/image3.jpg |
-|  | SKU-D | 1 | https://example.com/image4.jpg |
+| COMBO-002 | SKU-D | 1 | https://example.com/image4.jpg |
 
 **Notes:**
-- Empty cells in the Combined SKU column inherit the value from the previous row
+- Each row must have a Combined SKU value (the node supports empty cells that inherit from previous rows, but it's recommended to fill all cells)
 - Column letters can be customized in the node (A, B, C, D, etc.)
 - Start row can be configured (default: 2)
 
