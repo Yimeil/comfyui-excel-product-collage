@@ -38,11 +38,12 @@ class ExcelSKULoader:
         try:
             excel_files = [f for f in os.listdir(excel_folder)
                           if f.endswith(('.xlsx', '.xls', '.xlsm'))]
+            excel_files.sort()  # 按字母排序
         except:
             pass
 
         if not excel_files:
-            excel_files = ["[请将Excel文件放入input/excel_files文件夹]"]
+            excel_files = ["未找到文件，请点击上传按钮"]
 
         return {
             "required": {
@@ -132,8 +133,8 @@ class ExcelSKULoader:
             print(f"🔄 输出模式: {output_mode}")
 
             # 1. 读取Excel文件
-            if excel_file.startswith("["):
-                raise ValueError("请将Excel文件放入 ComfyUI/input/excel_files/ 文件夹中")
+            if excel_file.startswith("未找到文件"):
+                raise ValueError("未找到Excel文件，请点击节点上的'上传Excel文件'按钮上传文件")
 
             file_path = os.path.join(excel_folder, excel_file)
             print(f"\n📖 读取Excel文件: {excel_file}")
