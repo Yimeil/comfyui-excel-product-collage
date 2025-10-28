@@ -1,0 +1,10 @@
+"""
+Excel SKU智能拼接节点
+支持从Excel读取SKU分组信息，自动下载图片并拼接
+"""
+
+from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+__version__ = "1.0.0"
+__author__ = "SKU Collage Team"
