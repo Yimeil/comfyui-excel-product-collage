@@ -4,15 +4,30 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 ## Features
 
-- **Excel-Based SKU Management**: Load product data directly from Excel spreadsheets
+### 📁 File Upload
+- **Browser-Based Upload**: Upload Excel files directly through ComfyUI interface
+- **Works Like LoadImage**: Same familiar upload experience as image loading
+- **Remote-Friendly**: Perfect for cloud/remote ComfyUI deployments
+- **Auto-Detection**: Automatically scans and lists uploaded files
+
+### 📊 Excel Processing
+- **Excel-Based SKU Management**: Load product data from .xlsx, .xls, .xlsm files
+- **Flexible Column Mapping**: Customize which columns contain SKU, PCS, URLs
+- **Combined SKU Grouping**: Automatically groups items by combined SKU
+- **Empty Cell Handling**: Supports empty cells that inherit from previous rows
+
+### 🖼️ Image Processing
 - **Automatic Image Download**: Fetch product images from URLs with built-in caching
+- **Auto-Resize & Padding**: Uniform dimensions with white background padding
+- **Smart Image Caching**: LRU cache to avoid re-downloading (configurable 10-1000 images)
 - **Batch Processing**: Process multiple combined SKUs in organized batches
-- **Flexible Label Formats**: Multiple label format options (×PCS, xPCS, PCS件, etc.)
-- **Smart Image Caching**: Configurable cache system to speed up repeated processing
-- **Auto-Resize & Padding**: Automatically resize images to uniform dimensions with white padding
+
+### 🏷️ Output Options
+- **Flexible Label Formats**: ×PCS, xPCS, PCS件, PCS套, PCS:{pcs}
 - **Two Output Modes**:
-  - `by_combined_sku`: Separate batches for each combined SKU (recommended)
+  - `by_combined_sku`: Separate batch per combined SKU (recommended)
   - `all_in_one`: All images in a single batch
+- **Detailed Reports**: Processing statistics and cache performance metrics
 
 ## Installation
 
@@ -34,11 +49,17 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
    pip install -r requirements.txt
    ```
 
-### Method 2: ComfyUI Manager
+### Method 2: ComfyUI Manager (Coming Soon)
 
 1. Open ComfyUI Manager
-2. Search for "Excel Product Collage"
+2. Search for "Excel Product Collage" or "Excel SKU Loader"
 3. Click Install
+
+### After Installation
+
+1. Restart ComfyUI
+2. The node will appear in `Add Node > 🎨 Smart Collage > Excel > 📊 Excel SKU数据加载器`
+3. The `input/excel_files/` folder will be created automatically
 
 ## Requirements
 
@@ -52,82 +73,107 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 ## Usage
 
-### Upload Excel File
+### Quick Start
 
-**Method 1: Upload via Node (Recommended)**
+#### Step 1: Upload Your Excel File
 
-1. Add the "Excel SKU Loader" node to your workflow
-2. Click on the `excel_file` dropdown (it will show a file icon📁)
-3. Click the upload icon or select from existing files
-4. Choose your Excel file from your local computer (.xlsx, .xls, .xlsm)
-5. The file will be automatically uploaded to `ComfyUI/input/excel_files/`
-6. Select the uploaded file from the dropdown
+**Option A: Upload via Interface (Recommended)**
+1. Add the "📊 Excel SKU数据加载器" node to your workflow
+2. Look at the `excel_file` parameter - you'll see a dropdown with an upload icon 📁
+3. Click the upload icon next to the dropdown
+4. Select your Excel file (.xlsx, .xls, or .xlsm)
+5. The file uploads automatically to `ComfyUI/input/excel_files/`
+6. The uploaded file is now selected in the dropdown
 
-**Method 2: Manual Upload (Alternative)**
+**Option B: Manual Copy**
+1. Copy your Excel file to `ComfyUI/input/excel_files/` folder
+2. Refresh the ComfyUI page or right-click the node → "Reload Node"
+3. Your file will appear in the dropdown
 
-1. Place your Excel file in the `ComfyUI/input/excel_files/` folder manually
-2. Refresh the node or restart ComfyUI
-3. The file will appear in the dropdown list
+> 💡 **Tip**: The upload works exactly like LoadImage node - familiar and easy!
 
-**Note**: The upload mechanism works exactly like ComfyUI's LoadImage node. The `input/excel_files/` folder is automatically created on first use.
+#### Step 2: Prepare Your Excel File
 
-### Excel File Format
+Your Excel file should have these columns (customizable):
 
-Your Excel file should have the following columns (default):
-
-| Combined SKU | SKU | PCS | Image URL |
-|--------------|-----|-----|-----------|
+| Column A<br/>Combined SKU | Column B<br/>SKU | Column C<br/>PCS | Column D<br/>Image URL |
+|:--------------------------|:-----------------|:-----------------|:-----------------------|
 | COMBO-001 | SKU-A | 2 | https://example.com/image1.jpg |
 | COMBO-001 | SKU-B | 1 | https://example.com/image2.jpg |
 | COMBO-002 | SKU-C | 3 | https://example.com/image3.jpg |
 | COMBO-002 | SKU-D | 1 | https://example.com/image4.jpg |
 
-**Notes:**
-- Each row must have a Combined SKU value (the node supports empty cells that inherit from previous rows, but it's recommended to fill all cells)
-- Column letters can be customized in the node (A, B, C, D, etc.)
-- Start row can be configured (default: 2)
+**Column Details:**
+- **Combined SKU (A)**: Group identifier - items with same Combined SKU are batched together
+- **SKU (B)**: Individual product SKU code
+- **PCS (C)**: Quantity/pieces for this SKU (used in label)
+- **Image URL (D)**: Direct HTTP/HTTPS URL to product image
 
-### Node Parameters
+**Important Notes:**
+- ✅ First row can be headers (set `start_row=2` to skip it)
+- ✅ Empty cells in Combined SKU column inherit from row above (but recommended to fill all)
+- ✅ Column letters are customizable (A, B, C, D or any other columns)
+- ✅ Image URLs must start with `http://` or `https://`
 
-#### Required Parameters
+#### Step 3: Configure Node Parameters
 
-- **excel_file**: Select your Excel file from the dropdown (files in `ComfyUI/input/excel_files/`)
-- **sheet_name**: Name of the worksheet (default: "Sheet1")
-- **combined_sku_col**: Column letter for combined SKU (default: "A")
-- **sku_col**: Column letter for individual SKU (default: "B")
-- **pcs_col**: Column letter for PCS quantity (default: "C")
-- **url_col**: Column letter for image URL (default: "D")
-- **start_row**: Starting row number (default: 2, skips header)
-- **use_cache**: Enable/disable image caching (default: True)
-- **cache_size**: Maximum number of cached images (default: 100)
-- **label_format**: Label format options:
-  - `×{pcs}` (default)
-  - `x{pcs}`
-  - `{pcs}件`
-  - `{pcs}套`
-  - `PCS:{pcs}`
-- **output_mode**: Output mode:
-  - `by_combined_sku`: Separate batch per combined SKU (recommended)
-  - `all_in_one`: Single batch with all images
+**📂 File Settings**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `excel_file` | Dropdown | - | Your Excel file (upload icon 📁 to add new files) |
+| `sheet_name` | String | "Sheet1" | Worksheet name to read from |
 
-#### Optional Parameters
+**📋 Column Mapping**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `combined_sku_col` | String | "A" | Column containing combined SKU |
+| `sku_col` | String | "B" | Column containing individual SKU |
+| `pcs_col` | String | "C" | Column containing PCS quantity |
+| `url_col` | String | "D" | Column containing image URLs |
+| `start_row` | Integer | 2 | First data row (2 = skip header row) |
 
-- **filter_combined_sku**: Process only a specific combined SKU (leave empty for all)
+**🎨 Processing Options**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `output_mode` | Dropdown | by_combined_sku | `by_combined_sku` (separate batches) or `all_in_one` |
+| `label_format` | Dropdown | ×{pcs} | Label format: `×{pcs}`, `x{pcs}`, `{pcs}件`, `{pcs}套`, `PCS:{pcs}` |
+| `use_cache` | Boolean | True | Enable image caching (faster re-runs) |
+| `cache_size` | Integer | 100 | Max cached images (10-1000) |
 
-### Node Outputs
+**🔍 Filtering (Optional)**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `filter_combined_sku` | String | "" | Process only specific Combined SKU (empty = all) |
 
-1. **images**: List of image batches (PyTorch tensors)
-2. **labels**: List of label strings (comma-separated)
-3. **combined_sku_info**: Processing report with statistics
+#### Step 4: Connect Outputs
 
-### Example Workflow
+The node provides 3 outputs:
 
-1. Add the "Excel SKU Loader" node to your ComfyUI workflow
-2. Click on the `excel_file` dropdown and upload your Excel file
-3. Configure the sheet name and column mappings (A, B, C, D for default columns)
-4. Connect the image output to your collage/layout nodes
-5. Connect the labels output to text overlay nodes
-6. Run the workflow!
+| Output | Type | Description | Usage |
+|--------|------|-------------|-------|
+| `images` | IMAGE (List) | Image batches for each Combined SKU | Connect to image layout/collage nodes |
+| `labels` | STRING (List) | Comma-separated labels (e.g., "×2,×1,×3") | Connect to text overlay nodes |
+| `combined_sku_info` | STRING | Processing report with statistics | View in console or save to file |
+
+**Example Output for `by_combined_sku` mode:**
+- Batch 1: 3 images from COMBO-001 with labels "×2,×1,×3"
+- Batch 2: 2 images from COMBO-002 with labels "×1,×5"
+
+### Complete Workflow Example
+
+```
+1. Add "📊 Excel SKU数据加载器" node
+2. Upload Excel file using the 📁 icon
+3. Configure parameters:
+   - sheet_name: "Sheet1"
+   - Columns: A, B, C, D (default)
+   - output_mode: by_combined_sku
+   - label_format: ×{pcs}
+4. Connect outputs:
+   - images → Image Layout Node
+   - labels → Text Overlay Node
+5. Queue workflow!
+```
 
 ## Image Processing Details
 
@@ -150,25 +196,40 @@ This ensures all images in a batch have uniform dimensions, preventing dimension
 
 ## Troubleshooting
 
-### Common Issues
+### File Upload Issues
 
-**Problem**: "Excel file not found" or shows "未找到文件，请点击上传按钮"
-- **Solution**: Click the "📁 上传Excel文件" button in the node to upload your Excel file
+| Problem | Solution |
+|---------|----------|
+| 📁 **Upload icon not visible** | Make sure `js/excel_upload.js` is loaded. Check browser console (F12) for errors. Clear browser cache and refresh. |
+| 📂 **File doesn't appear after upload** | Right-click node → "Reload Node" or refresh page. Check if file is in `ComfyUI/input/excel_files/` folder. |
+| ❌ **Upload fails with error** | Check file size (large files may timeout). Ensure file extension is .xlsx, .xls, or .xlsm. Try manual copy method. |
+| 🔄 **Dropdown shows old files** | Refresh ComfyUI page or restart ComfyUI server. Files are scanned at node creation time. |
 
-**Problem**: "File doesn't appear in dropdown after upload"
-- **Solution**: Right-click the node → "Reload Node" or refresh the page. The file should appear in the dropdown
+### Excel Processing Issues
 
-**Problem**: "Upload button not visible"
-- **Solution**: Make sure you're using the latest version and the web extension is loaded. Check browser console for errors
+| Problem | Solution |
+|---------|----------|
+| ⚠️ **"No valid SKU groups found"** | Verify column letters (A, B, C, D) match your Excel layout. Check `start_row` value (2 = skip first row). Ensure Combined SKU column has values. |
+| 🔢 **Wrong data loaded** | Check `sheet_name` matches your worksheet. Verify `start_row` points to data (not headers). |
+| 📊 **Empty cells cause errors** | Fill all Combined SKU cells (recommended) or ensure first row in each group has the value. |
+| 🔤 **Column not found** | Column letters are case-insensitive but must be A-Z. Check spelling in parameters. |
 
-**Problem**: "No valid SKU groups found"
-- **Solution**: Verify column letters match your Excel layout and start_row is correct
+### Image Download Issues
 
-**Problem**: "Image download failed"
-- **Solution**: Check URL validity and network connection; some URLs may require authentication
+| Problem | Solution |
+|---------|----------|
+| 🌐 **Image download failed** | Verify URLs start with http:// or https://. Test URLs in browser. Check network connection. Some URLs may require authentication. |
+| ⏱️ **Download timeout** | Increase timeout (default 30s) or check internet speed. Large images take longer. |
+| 🖼️ **Invalid image format** | Ensure URLs point to actual image files (.jpg, .png, etc.), not HTML pages. |
+| 🔒 **SSL/HTTPS errors** | Warning is suppressed but some strict HTTPS sites may fail. Try downloading manually and using local URLs. |
 
-**Problem**: "Dimension mismatch error"
-- **Solution**: Use `by_combined_sku` mode which auto-resizes images to uniform dimensions
+### Output Issues
+
+| Problem | Solution |
+|---------|----------|
+| 📐 **Dimension mismatch error** | Use `by_combined_sku` mode which auto-resizes to uniform dimensions. Check that all images downloaded successfully. |
+| 🏷️ **Labels not showing** | Labels are comma-separated strings. Use a text parsing node to split them. Check `label_format` parameter. |
+| ❌ **Empty/black images** | Check console output for download errors. Verify image URLs are accessible. Try re-running with cache disabled. |
 
 ### Debug Output
 
@@ -208,20 +269,27 @@ This project is open source and available under the MIT License.
 
 ## Changelog
 
-### v1.1.0 (2025-01-XX)
-- **NEW**: File upload button in node UI - upload Excel files directly from your browser
-- Files are automatically saved to `ComfyUI/input/excel_files/` folder
-- Dropdown selection of uploaded Excel files
-- Improved compatibility with remote ComfyUI environments
-- Auto-resize and padding for uniform image dimensions
-- Web extension for seamless file upload experience
+### v1.1.0 (2025-01-28)
+- **✨ NEW**: Browser-based file upload (works like LoadImage node)
+- **✨ NEW**: Auto-resize and padding for uniform image dimensions
+- **✨ NEW**: Input validation and better error messages
+- **📁**: Upload icon in `excel_file` dropdown for easy file selection
+- **🌐**: Perfect for remote/cloud ComfyUI deployments
+- **📦**: Files automatically saved to `ComfyUI/input/excel_files/`
+- **🔄**: Uses ComfyUI standard `/upload/image` API endpoint
+- **📊**: Improved processing reports with detailed statistics
+- **🐛**: Fixed dimension mismatch errors in batch processing
+- **📚**: Comprehensive README with troubleshooting tables
 
-### v1.0.0 (2024-01-XX)
+### v1.0.0 (2024-12-XX)
 - Initial release
-- Excel SKU data loading
-- Image downloading with caching
+- Excel SKU data loading from .xlsx, .xls, .xlsm files
+- Image downloading with LRU caching
 - Batch processing by combined SKU
-- Multiple label formats
+- Multiple label formats (×PCS, xPCS, etc.)
+- Two output modes (by_combined_sku, all_in_one)
+- Flexible column mapping
+- Support for empty cell inheritance
 
 ## Support
 
