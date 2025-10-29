@@ -66,15 +66,37 @@ async function uploadExcelFile(file, node) {
             // 更新 excel_file widget 的值
             const excelFileWidget = node.widgets.find(w => w.name === "excel_file");
             if (excelFileWidget) {
-                // 添加到选项列表（如果不存在）
-                if (!excelFileWidget.options.values.includes(result.filename)) {
-                    excelFileWidget.options.values.push(result.filename);
-                    excelFileWidget.options.values.sort();
+                console.log("📋 Widget 信息:", excelFileWidget);
+                console.log("📋 Options:", excelFileWidget.options);
+
+                // 确保 options.values 存在
+                if (excelFileWidget.options && excelFileWidget.options.values) {
+                    // 添加到选项列表（如果不存在）
+                    if (!excelFileWidget.options.values.includes(result.filename)) {
+                        excelFileWidget.options.values.push(result.filename);
+                        excelFileWidget.options.values.sort();
+                        console.log("✅ 已添加到下拉列表:", result.filename);
+                    } else {
+                        console.log("ℹ️ 文件已存在于列表中:", result.filename);
+                    }
+                } else {
+                    console.warn("⚠️ Widget options.values 不存在，尝试创建");
+                    if (!excelFileWidget.options) {
+                        excelFileWidget.options = {};
+                    }
+                    excelFileWidget.options.values = [result.filename];
                 }
+
                 // 设置为当前选中项
                 excelFileWidget.value = result.filename;
+                console.log("🔄 已更新下拉菜单选中值:", result.filename);
 
-                console.log("🔄 已更新下拉菜单，当前选择:", result.filename);
+                // 强制刷新节点显示
+                if (node.setDirtyCanvas) {
+                    node.setDirtyCanvas(true, true);
+                }
+            } else {
+                console.error("❌ 未找到 excel_file widget");
             }
 
             alert(`✅ 文件上传成功！\n\n文件名: ${result.filename}\n保存位置: ComfyUI/input/excel_files/\n\n已自动选中该文件，可以直接使用。`);
