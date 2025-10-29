@@ -1,66 +1,90 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
-// 为ExcelSKULoader添加上传功能（参考LoadImage实现）
+// Excel 文件上传扩展
 app.registerExtension({
     name: "ExcelSKULoader.Upload",
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "ExcelSKULoader") {
-            // 添加文件上传处理（类似LoadImage）
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+
             nodeType.prototype.onNodeCreated = function() {
-                // 查找excel_file widget
-                const excelWidget = this.widgets.find(w => w.name === "excel_file");
+                const ret = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
-                if (excelWidget) {
-                    // 添加上传回调
-                    excelWidget.callback = function() {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        input.accept = ".xlsx,.xls,.xlsm";
-                        input.style.display = "none";
-                        document.body.appendChild(input);
+                // 添加上传按钮
+                const uploadButton = this.addWidget("button", "📁 上传Excel文件", null, () => {
+                    showUploadDialog(this);
+                });
 
-                        input.onchange = async function() {
-                            if (input.files && input.files[0]) {
-                                const file = input.files[0];
-
-                                // 使用ComfyUI的上传API
-                                const formData = new FormData();
-                                formData.append("image", file);  // ComfyUI期望的字段名
-                                formData.append("subfolder", "excel_files");
-                                formData.append("type", "input");
-
-                                try {
-                                    const resp = await api.fetchApi("/upload/image", {
-                                        method: "POST",
-                                        body: formData,
-                                    });
-
-                                    if (resp.status === 200) {
-                                        const data = await resp.json();
-                                        // 更新widget值为上传的文件名
-                                        excelWidget.value = file.name;
-                                        console.log("Excel文件上传成功:", file.name);
-                                    } else {
-                                        alert("上传失败: " + resp.statusText);
-                                    }
-                                } catch (error) {
-                                    console.error("上传错误:", error);
-                                    alert("上传错误: " + error.message);
-                                }
-                            }
-                            document.body.removeChild(input);
-                        };
-
-                        input.click();
-                    };
-
-                    // 添加上传图标提示
-                    excelWidget.options = excelWidget.options || {};
-                    excelWidget.options.image_upload = true;
-                }
+                return ret;
             };
         }
     }
 });
+
+// 显示文件上传对话框
+function showUploadDialog(node) {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".xlsx,.xls,.xlsm";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    fileInput.onchange = async () => {
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            await uploadExcelFile(file, node);
+        }
+        document.body.removeChild(fileInput);
+    };
+
+    fileInput.click();
+}
+
+// 上传 Excel 文件
+async function uploadExcelFile(file, node) {
+    try {
+        console.log("📤 开始上传 Excel 文件:", file.name);
+
+        // 创建 FormData
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // 发送到自定义上传端点
+        const response = await api.fetchApi("/excel_sku_loader/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.status === 200 && result.success) {
+            console.log("✅ Excel 文件上传成功:", result.filename);
+            console.log("📁 保存路径:", result.path);
+
+            // 更新 excel_file widget 的值
+            const excelFileWidget = node.widgets.find(w => w.name === "excel_file");
+            if (excelFileWidget) {
+                // 添加到选项列表（如果不存在）
+                if (!excelFileWidget.options.values.includes(result.filename)) {
+                    excelFileWidget.options.values.push(result.filename);
+                    excelFileWidget.options.values.sort();
+                }
+                // 设置为当前选中项
+                excelFileWidget.value = result.filename;
+
+                console.log("🔄 已更新下拉菜单，当前选择:", result.filename);
+            }
+
+            alert(`✅ 文件上传成功！\n\n文件名: ${result.filename}\n保存位置: ComfyUI/input/excel_files/\n\n已自动选中该文件，可以直接使用。`);
+        } else {
+            const errorMsg = result.error || result.message || "上传失败";
+            console.error("❌ 上传失败:", errorMsg);
+            alert(`❌ 上传失败\n\n${errorMsg}`);
+        }
+    } catch (error) {
+        console.error("❌ 上传错误:", error);
+        alert(`❌ 上传错误\n\n${error.message}\n\n请检查:\n1. ComfyUI 服务器是否正常运行\n2. 网络连接是否正常\n3. 浏览器控制台(F12)查看详细错误`);
+    }
+}
