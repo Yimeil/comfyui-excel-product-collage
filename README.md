@@ -77,20 +77,35 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 #### Step 1: Upload Your Excel File
 
-**Option A: Upload via Interface (Recommended)**
-1. Add the "📊 Excel SKU数据加载器" node to your workflow
-2. Look at the `excel_file` parameter - you'll see a dropdown with an upload icon 📁
-3. Click the upload icon next to the dropdown
-4. Select your Excel file (.xlsx, .xls, or .xlsm)
-5. The file uploads automatically to `ComfyUI/input/excel_files/`
-6. The uploaded file is now selected in the dropdown
+**🖥️ For Desktop Client Users (Recommended Method)**
 
-**Option B: Manual Copy**
-1. Copy your Excel file to `ComfyUI/input/excel_files/` folder
-2. Refresh the ComfyUI page or right-click the node → "Reload Node"
-3. Your file will appear in the dropdown
+The simplest way is to **manually copy** your Excel file:
 
-> 💡 **Tip**: The upload works exactly like LoadImage node - familiar and easy!
+1. Copy your Excel file to the folder:
+   ```
+   ComfyUI/input/excel_files/
+   ```
+   Common paths:
+   - Windows: `C:\ComfyUI\input\excel_files\`
+   - Portable: `ComfyUI_windows_portable\ComfyUI\input\excel_files\`
+
+2. Restart ComfyUI or reload the node
+3. Your file appears in the dropdown
+
+> 📖 **See [DESKTOP_CLIENT_GUIDE.md](DESKTOP_CLIENT_GUIDE.md) for detailed instructions**
+
+**🌐 For Browser Users**
+
+**Option A: Upload via Interface**
+1. Add the "📊 Excel SKU数据加载器" node
+2. Click the "📁 上传Excel文件" button at the bottom
+3. Select your Excel file (.xlsx, .xls, or .xlsm)
+4. File uploads to `ComfyUI/input/excel_files/` automatically
+5. Dropdown auto-selects the uploaded file
+
+**Option B: Manual Copy** (same as desktop method above)
+
+> 💡 **Tip**: Manual copy works for both desktop and browser versions!
 
 #### Step 2: Prepare Your Excel File
 
