@@ -33,20 +33,12 @@ class ExcelSKULoader:
     
     @classmethod
     def INPUT_TYPES(cls):
-        # 获取 excel_files 文件夹中的所有 Excel 文件
-        excel_files = [f for f in os.listdir(excel_folder)
-                       if f.endswith(('.xlsx', '.xls', '.xlsm'))] if os.path.exists(excel_folder) else []
-
-        # 添加提示选项
-        if not excel_files:
-            excel_files = [""]
-
         return {
             "required": {
-                "excel_file": (excel_files, {
-                    "editable": True,  # 允许手动输入
-                    "default": excel_files[0] if excel_files else "",
-                    "placeholder": "选择或输入Excel文件路径"
+                "excel_file": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "输入Excel文件路径或文件名（如：C:\\path\\to\\file.xlsx 或 file.xlsx）"
                 }),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
@@ -118,12 +110,22 @@ class ExcelSKULoader:
 
     @classmethod
     def VALIDATE_INPUTS(cls, excel_file, **kwargs):
-        # 验证文件是否存在
-        if not excel_file:
-            return "请上传Excel文件"
-        file_path = os.path.join(excel_folder, excel_file)
+        # 验证文件路径
+        if not excel_file or not excel_file.strip():
+            return "请输入Excel文件路径"
+
+        # 判断是完整路径还是文件名
+        file_path = excel_file.strip()
+        if not ('\\' in file_path or '/' in file_path or ':' in file_path):
+            # 只是文件名，从 excel_files 文件夹查找
+            file_path = os.path.join(excel_folder, file_path)
+
         if not os.path.exists(file_path):
-            return f"文件不存在: {excel_file}"
+            return f"文件不存在: {file_path}"
+
+        if not file_path.lower().endswith(('.xlsx', '.xls', '.xlsm')):
+            return "文件必须是 Excel 格式 (.xlsx, .xls, .xlsm)"
+
         return True
 
     def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
