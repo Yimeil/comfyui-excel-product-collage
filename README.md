@@ -77,44 +77,40 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 #### Step 1: Upload Your Excel File
 
-**🖥️ For Desktop Client Users (Recommended Method)**
+**🎯 Recommended: Manual Path Input (Easiest & Most Flexible)**
 
-The simplest way is to **manually copy** your Excel file:
+Simply enter the full path to your Excel file in the `manual_path` parameter:
 
-1. Copy your Excel file to the folder:
-   ```
-   ComfyUI/input/excel_files/
-   ```
-   Common paths:
-   - Windows: `C:\ComfyUI\input\excel_files\`
-   - Portable: `ComfyUI_windows_portable\ComfyUI\input\excel_files\`
+```
+Examples:
+- Windows: C:\Users\YourName\Documents\products.xlsx
+- Mac/Linux: /home/user/documents/products.xlsx
+- Network: \\server\share\products.xlsx
+```
 
-2. Restart ComfyUI or reload the node
-3. Your file appears in the dropdown
+✅ Works anywhere on your system
+✅ No need to copy files
+✅ Works in both desktop client and browser
 
-> 📖 **See [DESKTOP_CLIENT_GUIDE.md](DESKTOP_CLIENT_GUIDE.md) for detailed instructions**
+---
 
-**🌐 For Browser Users**
+**Alternative Methods:**
 
-**Option A: Upload via Interface**
+**Method 1: Upload Button** (Browser/Desktop Client)
 1. Add the "📊 Excel SKU数据加载器" node
 2. Click the "📁 上传Excel文件" button at the bottom
 3. Select your Excel file (.xlsx, .xls, or .xlsm)
-4. File uploads to `ComfyUI/input/excel_files/` automatically
+4. File uploads to `ComfyUI/input/excel_files/`
 5. Dropdown auto-selects the uploaded file
 
-**Option B: Manual Copy** (same as desktop method above)
+> ⚠️ **Note**: Upload button requires ComfyUI restart to load the upload endpoint
 
-**Option C: Manual Path Input** (works everywhere!)
-1. Add the node
-2. Leave `excel_file` dropdown as is
-3. Enter full path in `manual_path` field
-4. Examples:
-   - Windows: `C:\Users\YourName\Documents\products.xlsx`
-   - Mac/Linux: `/home/user/documents/products.xlsx`
-   - Network: `\\server\share\products.xlsx`
+**Method 2: Manual Copy to Folder**
+1. Copy your Excel file to: `ComfyUI/input/excel_files/`
+2. Restart ComfyUI or reload the node
+3. Select from dropdown
 
-> 💡 **Tip**: Manual path works for any location, not just `excel_files` folder!
+> 📖 **Desktop Client Users**: See [DESKTOP_CLIENT_GUIDE.md](DESKTOP_CLIENT_GUIDE.md) for detailed instructions
 
 #### Step 2: Prepare Your Excel File
 

@@ -33,13 +33,13 @@ class ExcelSKULoader:
     
     @classmethod
     def INPUT_TYPES(cls):
-        # 使用 folder_paths 获取文件列表（类似 LoadImage）
+        # 获取 excel_files 文件夹中的所有 Excel 文件
         excel_files = [f for f in os.listdir(excel_folder)
                        if f.endswith(('.xlsx', '.xls', '.xlsm'))] if os.path.exists(excel_folder) else []
 
         return {
             "required": {
-                "excel_file": (sorted(excel_files), {"image_upload": True}),
+                "excel_file": (sorted(excel_files),),  # 移除 image_upload 标记
                 "manual_path": ("STRING", {
                     "default": "",
                     "multiline": False,
