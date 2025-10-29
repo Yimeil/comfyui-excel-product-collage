@@ -105,7 +105,16 @@ The simplest way is to **manually copy** your Excel file:
 
 **Option B: Manual Copy** (same as desktop method above)
 
-> 💡 **Tip**: Manual copy works for both desktop and browser versions!
+**Option C: Manual Path Input** (works everywhere!)
+1. Add the node
+2. Leave `excel_file` dropdown as is
+3. Enter full path in `manual_path` field
+4. Examples:
+   - Windows: `C:\Users\YourName\Documents\products.xlsx`
+   - Mac/Linux: `/home/user/documents/products.xlsx`
+   - Network: `\\server\share\products.xlsx`
+
+> 💡 **Tip**: Manual path works for any location, not just `excel_files` folder!
 
 #### Step 2: Prepare Your Excel File
 
@@ -136,7 +145,10 @@ Your Excel file should have these columns (customizable):
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `excel_file` | Dropdown | - | Your Excel file (upload icon 📁 to add new files) |
+| `manual_path` | String | "" | **OR** manually input full file path (overrides dropdown) |
 | `sheet_name` | String | "Sheet1" | Worksheet name to read from |
+
+> 💡 **Tip**: Use `manual_path` to specify any Excel file location on your system
 
 **📋 Column Mapping**
 | Parameter | Type | Default | Description |

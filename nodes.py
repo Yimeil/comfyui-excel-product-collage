@@ -40,6 +40,11 @@ class ExcelSKULoader:
         return {
             "required": {
                 "excel_file": (sorted(excel_files), {"image_upload": True}),
+                "manual_path": ("STRING", {
+                    "default": "",
+                    "multiline": False,
+                    "placeholder": "或手动输入完整文件路径（留空则使用上面的下拉选择）"
+                }),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
                     "placeholder": "工作表名称"
@@ -118,7 +123,7 @@ class ExcelSKULoader:
             return f"文件不存在: {excel_file}"
         return True
 
-    def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
+    def load_sku_data(self, excel_file, manual_path, sheet_name, combined_sku_col, sku_col,
                      pcs_col, url_col, start_row, use_cache=True, cache_size=100,
                      label_format="×{pcs}", output_mode="by_combined_sku",
                      filter_combined_sku=""):
@@ -135,13 +140,19 @@ class ExcelSKULoader:
             print(f"📦 当前缓存: {len(self._image_cache)}/{self._cache_max_size} 张图片")
             print(f"🔄 输出模式: {output_mode}")
 
-            # 1. 读取Excel文件
-            file_path = os.path.join(excel_folder, excel_file)
-            print(f"\n📖 读取Excel文件: {excel_file}")
-            print(f"   文件路径: {file_path}")
+            # 1. 确定Excel文件路径（优先使用手动路径）
+            if manual_path and manual_path.strip():
+                # 使用手动输入的路径
+                file_path = manual_path.strip()
+                print(f"\n📖 使用手动路径: {file_path}")
+            else:
+                # 使用下拉菜单选择的文件
+                file_path = os.path.join(excel_folder, excel_file)
+                print(f"\n📖 使用下拉选择: {excel_file}")
+                print(f"   文件路径: {file_path}")
 
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"Excel文件不存在: {file_path}\n请通过节点上传按钮上传文件")
+                raise FileNotFoundError(f"Excel文件不存在: {file_path}\n\n请检查:\n1. 文件路径是否正确\n2. 文件是否存在\n3. 或通过上传按钮上传文件")
 
             df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
             print(f"   ✅ 成功读取 {len(df)} 行数据")
@@ -300,95 +311,8 @@ class ExcelSKULoader:
         
         # 粘贴图片
         result.paste(img_resized, (x, y))
-        
+
         return result
-        """按组合SKU分批处理（推荐模式）"""
-        
-        all_image_batches = []  # 每个元素是一个组合SKU的图片批次
-        all_label_batches = []  # 每个元素是一个组合SKU的标签字符串
-        info_lines = []
-        
-        for idx, (combined_sku, group_data) in enumerate(groups.items(), 1):
-            print(f"\n{'='*80}")
-            print(f"🎯 [{idx}/{len(groups)}] 处理组合SKU: {combined_sku}")
-            print(f"{'='*80}")
-            print(f"   子SKU数量: {len(group_data['items'])}")
-            
-            batch_images = []
-            batch_labels = []
-            
-            for item in group_data['items']:
-                print(f"\n   📦 处理SKU: {item['sku']}")
-                print(f"      PCS数: {item['pcs']}")
-                print(f"      URL: {item['url'][:80]}...")
-                
-                # 下载图片
-                img = self.download_image(item['url'], use_cache=use_cache)
-                
-                if img:
-                    # 转换为numpy数组
-                    img_array = np.array(img).astype(np.float32) / 255.0
-                    if len(img_array.shape) == 2:  # 灰度图
-                        img_array = np.stack([img_array] * 3, axis=-1)
-                    elif img_array.shape[-1] == 4:  # RGBA
-                        img_array = img_array[:, :, :3]
-                    
-                    batch_images.append(img_array)
-                    
-                    # 生成标签
-                    label = label_format.format(pcs=item['pcs'])
-                    batch_labels.append(label)
-                    
-                    print(f"      ✅ 加载成功，标签: {label}")
-                else:
-                    print(f"      ❌ 加载失败")
-            
-            if batch_images:
-                # 将当前组合SKU的图片堆叠成一个批次张量
-                batch_tensor = torch.from_numpy(np.stack(batch_images))
-                all_image_batches.append(batch_tensor)
-                
-                # 将标签用逗号连接成字符串
-                labels_str = ",".join(batch_labels)
-                all_label_batches.append(labels_str)
-                
-                info_lines.append(f"✅ {combined_sku}: {len(batch_images)} 个SKU")
-                print(f"\n   ✅ 批次完成: {len(batch_images)} 张图片")
-                print(f"      标签: {labels_str}")
-            else:
-                info_lines.append(f"❌ {combined_sku}: 0 个SKU (失败)")
-                print(f"\n   ❌ 批次失败")
-        
-        if not all_image_batches:
-            print("\n❌ 没有成功加载任何图片")
-            return self.create_empty_result()
-        
-        # 生成报告
-        info_str = "\n".join([
-            "="*60,
-            "📊 Excel SKU 加载报告（按组合SKU分批）",
-            "="*60,
-            f"Excel文件: {os.path.basename(groups)}",
-            f"组合SKU数量: {len(groups)}",
-            f"批次数量: {len(all_image_batches)}",
-            "="*60,
-            "",
-            *info_lines,
-            "",
-            "="*60,
-            f"缓存命中: {self._cache_hits} 次",
-            f"缓存未命中: {self._cache_misses} 次",
-            f"缓存命中率: {self._cache_hits/(self._cache_hits+self._cache_misses)*100:.1f}%" if (self._cache_hits+self._cache_misses) > 0 else "N/A",
-            "="*60
-        ])
-        
-        print("\n" + "="*80)
-        print(f"🎉 加载完成! 共 {len(all_image_batches)} 个批次")
-        for i, labels in enumerate(all_label_batches):
-            print(f"   批次{i+1}: {labels}")
-        print("="*80 + "\n")
-        
-        return (all_image_batches, all_label_batches, info_str)
     
     def process_all_in_one(self, groups, use_cache, label_format):
         """所有图片合并为一个批次"""
