@@ -37,13 +37,16 @@ class ExcelSKULoader:
         excel_files = [f for f in os.listdir(excel_folder)
                        if f.endswith(('.xlsx', '.xls', '.xlsm'))] if os.path.exists(excel_folder) else []
 
+        # 添加提示选项
+        if not excel_files:
+            excel_files = [""]
+
         return {
             "required": {
-                "excel_file": (sorted(excel_files),),  # 移除 image_upload 标记
-                "manual_path": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "placeholder": "或手动输入完整文件路径（留空则使用上面的下拉选择）"
+                "excel_file": (excel_files, {
+                    "editable": True,  # 允许手动输入
+                    "default": excel_files[0] if excel_files else "",
+                    "placeholder": "选择或输入Excel文件路径"
                 }),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
@@ -123,7 +126,7 @@ class ExcelSKULoader:
             return f"文件不存在: {excel_file}"
         return True
 
-    def load_sku_data(self, excel_file, manual_path, sheet_name, combined_sku_col, sku_col,
+    def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
                      pcs_col, url_col, start_row, use_cache=True, cache_size=100,
                      label_format="×{pcs}", output_mode="by_combined_sku",
                      filter_combined_sku=""):
@@ -140,19 +143,27 @@ class ExcelSKULoader:
             print(f"📦 当前缓存: {len(self._image_cache)}/{self._cache_max_size} 张图片")
             print(f"🔄 输出模式: {output_mode}")
 
-            # 1. 确定Excel文件路径（优先使用手动路径）
-            if manual_path and manual_path.strip():
-                # 使用手动输入的路径
-                file_path = manual_path.strip()
-                print(f"\n📖 使用手动路径: {file_path}")
+            # 1. 确定Excel文件路径
+            # 如果 excel_file 是完整路径（包含路径分隔符或盘符），直接使用
+            # 否则从 excel_files 文件夹中查找
+            if excel_file and ('\\' in excel_file or '/' in excel_file or ':' in excel_file):
+                # 完整路径
+                file_path = excel_file
+                print(f"\n📖 使用完整路径: {file_path}")
             else:
-                # 使用下拉菜单选择的文件
+                # 文件名，从 excel_files 文件夹中查找
                 file_path = os.path.join(excel_folder, excel_file)
-                print(f"\n📖 使用下拉选择: {excel_file}")
-                print(f"   文件路径: {file_path}")
+                print(f"\n📖 使用文件名: {excel_file}")
+                print(f"   完整路径: {file_path}")
 
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"Excel文件不存在: {file_path}\n\n请检查:\n1. 文件路径是否正确\n2. 文件是否存在\n3. 或通过上传按钮上传文件")
+                raise FileNotFoundError(
+                    f"Excel文件不存在: {file_path}\n\n"
+                    f"请检查:\n"
+                    f"1. 文件路径是否正确\n"
+                    f"2. 如果是文件名，确保文件在: {excel_folder}\n"
+                    f"3. 如果是完整路径，确保路径正确"
+                )
 
             df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
             print(f"   ✅ 成功读取 {len(df)} 行数据")

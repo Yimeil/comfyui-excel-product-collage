@@ -77,40 +77,41 @@ A ComfyUI custom node for generating product image collages from Excel SKU data.
 
 #### Step 1: Upload Your Excel File
 
-**🎯 Recommended: Manual Path Input (Easiest & Most Flexible)**
+**🎯 Method 1: Type or Paste Full Path (Easiest)**
 
-Simply enter the full path to your Excel file in the `manual_path` parameter:
+The `excel_file` parameter now accepts both dropdown selection AND manual input!
+
+Simply type or paste the full path directly in the `excel_file` field:
 
 ```
 Examples:
 - Windows: C:\Users\YourName\Documents\products.xlsx
 - Mac/Linux: /home/user/documents/products.xlsx
 - Network: \\server\share\products.xlsx
+- Just filename: products.xlsx (looks in excel_files folder)
 ```
 
-✅ Works anywhere on your system
-✅ No need to copy files
-✅ Works in both desktop client and browser
+✅ Editable dropdown - type anything
+✅ Works with full paths anywhere
+✅ Works with just filenames
+✅ No extra parameters needed
 
 ---
 
-**Alternative Methods:**
-
-**Method 1: Upload Button** (Browser/Desktop Client)
+**Method 2: Upload Button**
 1. Add the "📊 Excel SKU数据加载器" node
-2. Click the "📁 上传Excel文件" button at the bottom
+2. Click the "📁 上传Excel文件" button
 3. Select your Excel file (.xlsx, .xls, or .xlsm)
-4. File uploads to `ComfyUI/input/excel_files/`
-5. Dropdown auto-selects the uploaded file
+4. File uploads and auto-fills `excel_file`
 
-> ⚠️ **Note**: Upload button requires ComfyUI restart to load the upload endpoint
+> ⚠️ **Note**: Upload button requires ComfyUI restart to activate
 
-**Method 2: Manual Copy to Folder**
-1. Copy your Excel file to: `ComfyUI/input/excel_files/`
-2. Restart ComfyUI or reload the node
+**Method 3: Copy to Folder**
+1. Copy file to: `ComfyUI/input/excel_files/`
+2. Restart or reload node
 3. Select from dropdown
 
-> 📖 **Desktop Client Users**: See [DESKTOP_CLIENT_GUIDE.md](DESKTOP_CLIENT_GUIDE.md) for detailed instructions
+> 📖 **Desktop Client**: See [DESKTOP_CLIENT_GUIDE.md](DESKTOP_CLIENT_GUIDE.md)
 
 #### Step 2: Prepare Your Excel File
 
@@ -140,11 +141,10 @@ Your Excel file should have these columns (customizable):
 **📂 File Settings**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `excel_file` | Dropdown | - | Your Excel file (upload icon 📁 to add new files) |
-| `manual_path` | String | "" | **OR** manually input full file path (overrides dropdown) |
+| `excel_file` | Editable Dropdown | - | Select from list OR type/paste full file path |
 | `sheet_name` | String | "Sheet1" | Worksheet name to read from |
 
-> 💡 **Tip**: Use `manual_path` to specify any Excel file location on your system
+> 💡 **Tip**: `excel_file` is smart - detects if you entered a path or filename
 
 **📋 Column Mapping**
 | Parameter | Type | Default | Description |
