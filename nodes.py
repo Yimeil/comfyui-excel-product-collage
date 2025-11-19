@@ -13,6 +13,13 @@ import folder_paths
 
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
+def is_url(path):
+    """检测是否为 HTTP/HTTPS URL"""
+    if not path:
+        return False
+    path_lower = path.strip().lower()
+    return path_lower.startswith('http://') or path_lower.startswith('https://')
+
 # 注册Excel文件夹
 excel_folder = os.path.join(folder_paths.get_input_directory(), "excel_files")
 if not os.path.exists(excel_folder):
@@ -38,7 +45,7 @@ class ExcelSKULoader:
                 "excel_file": ("STRING", {
                     "default": "",
                     "multiline": False,
-                    "placeholder": "输入Excel文件路径或文件名（如：C:\\path\\to\\file.xlsx 或 file.xlsx）"
+                    "placeholder": "支持本地路径或URL（如：file.xlsx 或 https://example.com/file.xlsx）"
                 }),
                 "sheet_name": ("STRING", {
                     "default": "Sheet1",
@@ -102,6 +109,10 @@ class ExcelSKULoader:
 
     @classmethod
     def IS_CHANGED(cls, excel_file, **kwargs):
+        # URL 每次都重新加载
+        if is_url(excel_file):
+            return float("nan")
+
         # 检查文件修改时间
         file_path = os.path.join(excel_folder, excel_file)
         if os.path.exists(file_path):
@@ -112,10 +123,17 @@ class ExcelSKULoader:
     def VALIDATE_INPUTS(cls, excel_file, **kwargs):
         # 验证文件路径
         if not excel_file or not excel_file.strip():
-            return "请输入Excel文件路径"
+            return "请输入Excel文件路径或URL"
+
+        file_path = excel_file.strip()
+
+        # 如果是 URL，只检查格式
+        if is_url(file_path):
+            # 检查 URL 是否以 Excel 扩展名结尾（可选，因为有些 URL 可能没有扩展名）
+            # 这里只做基本验证，实际下载时会进一步检查
+            return True
 
         # 判断是完整路径还是文件名
-        file_path = excel_file.strip()
         if not ('\\' in file_path or '/' in file_path or ':' in file_path):
             # 只是文件名，从 excel_files 文件夹查找
             file_path = os.path.join(excel_folder, file_path)
@@ -145,30 +163,59 @@ class ExcelSKULoader:
             print(f"📦 当前缓存: {len(self._image_cache)}/{self._cache_max_size} 张图片")
             print(f"🔄 输出模式: {output_mode}")
 
-            # 1. 确定Excel文件路径
-            # 如果 excel_file 是完整路径（包含路径分隔符或盘符），直接使用
-            # 否则从 excel_files 文件夹中查找
-            if excel_file and ('\\' in excel_file or '/' in excel_file or ':' in excel_file):
-                # 完整路径
-                file_path = excel_file
-                print(f"\n📖 使用完整路径: {file_path}")
+            # 1. 确定Excel文件路径或URL
+            excel_file = excel_file.strip()
+
+            # 检查是否为 URL
+            if is_url(excel_file):
+                print(f"\n📖 从URL加载Excel文件: {excel_file}")
+                try:
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                    print(f"   🌐 下载中...")
+                    response = requests.get(excel_file, headers=headers, timeout=60, verify=False)
+                    response.raise_for_status()
+
+                    # 从 BytesIO 读取 Excel
+                    excel_data = BytesIO(response.content)
+                    df = pd.read_excel(excel_data, sheet_name=sheet_name, header=None)
+                    print(f"   ✅ 成功下载并读取 {len(df)} 行数据")
+
+                except requests.exceptions.RequestException as e:
+                    raise ConnectionError(
+                        f"下载Excel文件失败: {excel_file}\n\n"
+                        f"错误: {str(e)}\n\n"
+                        f"请检查:\n"
+                        f"1. URL是否正确\n"
+                        f"2. 网络连接是否正常\n"
+                        f"3. 文件是否存在且可访问"
+                    )
             else:
-                # 文件名，从 excel_files 文件夹中查找
-                file_path = os.path.join(excel_folder, excel_file)
-                print(f"\n📖 使用文件名: {excel_file}")
-                print(f"   完整路径: {file_path}")
+                # 本地文件路径
+                # 如果 excel_file 是完整路径（包含路径分隔符或盘符），直接使用
+                # 否则从 excel_files 文件夹中查找
+                if excel_file and ('\\' in excel_file or '/' in excel_file or ':' in excel_file):
+                    # 完整路径
+                    file_path = excel_file
+                    print(f"\n📖 使用完整路径: {file_path}")
+                else:
+                    # 文件名，从 excel_files 文件夹中查找
+                    file_path = os.path.join(excel_folder, excel_file)
+                    print(f"\n📖 使用文件名: {excel_file}")
+                    print(f"   完整路径: {file_path}")
 
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(
-                    f"Excel文件不存在: {file_path}\n\n"
-                    f"请检查:\n"
-                    f"1. 文件路径是否正确\n"
-                    f"2. 如果是文件名，确保文件在: {excel_folder}\n"
-                    f"3. 如果是完整路径，确保路径正确"
-                )
+                if not os.path.exists(file_path):
+                    raise FileNotFoundError(
+                        f"Excel文件不存在: {file_path}\n\n"
+                        f"请检查:\n"
+                        f"1. 文件路径是否正确\n"
+                        f"2. 如果是文件名，确保文件在: {excel_folder}\n"
+                        f"3. 如果是完整路径，确保路径正确"
+                    )
 
-            df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
-            print(f"   ✅ 成功读取 {len(df)} 行数据")
+                df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
+                print(f"   ✅ 成功读取 {len(df)} 行数据")
             
             # 2. 解析SKU分组
             print(f"\n🔍 解析SKU分组数据...")
