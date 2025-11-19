@@ -10,6 +10,8 @@ from collections import defaultdict, OrderedDict
 import os
 import warnings
 import folder_paths
+from datetime import datetime
+import re
 
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
@@ -90,6 +92,11 @@ class ExcelSKULoader:
                 "output_mode": (["all_in_one", "by_combined_sku"], {
                     "default": "by_combined_sku"
                 }),
+                "filename_prefix": ("STRING", {
+                    "default": "collage/%date:yyyy-MM-dd%/",
+                    "multiline": False,
+                    "placeholder": "文件名前缀，支持日期格式"
+                }),
             },
             "optional": {
                 "filter_combined_sku": ("STRING", {
@@ -100,12 +107,12 @@ class ExcelSKULoader:
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING")
-    RETURN_NAMES = ("images", "labels", "combined_sku_info")
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "labels", "combined_sku_info", "filename_prefix")
     FUNCTION = "load_sku_data"
     CATEGORY = "🎨 Smart Collage/Excel"
     OUTPUT_NODE = False
-    OUTPUT_IS_LIST = (True, True, False)  # images和labels输出为列表
+    OUTPUT_IS_LIST = (True, True, False, True)  # images, labels, filename_prefix 输出为列表
 
     @classmethod
     def IS_CHANGED(cls, excel_file, **kwargs):
@@ -149,6 +156,7 @@ class ExcelSKULoader:
     def load_sku_data(self, excel_file, sheet_name, combined_sku_col, sku_col,
                      pcs_col, url_col, start_row, use_cache=True, cache_size=100,
                      label_format="×{pcs}", output_mode="by_combined_sku",
+                     filename_prefix="%date:yyyy-MM-dd%/collage/",
                      filter_combined_sku=""):
         
         self._cache_max_size = cache_size
@@ -232,9 +240,9 @@ class ExcelSKULoader:
             
             # 3. 按输出模式处理
             if output_mode == "by_combined_sku":
-                return self.process_by_combined_sku(groups, use_cache, label_format)
+                return self.process_by_combined_sku(groups, use_cache, label_format, filename_prefix)
             else:
-                return self.process_all_in_one(groups, use_cache, label_format)
+                return self.process_all_in_one(groups, use_cache, label_format, filename_prefix)
             
         except Exception as e:
             error_msg = f"加载失败: {str(e)}"
@@ -243,12 +251,27 @@ class ExcelSKULoader:
             traceback.print_exc()
             return self.create_empty_result(error_msg)
     
-    def process_by_combined_sku(self, groups, use_cache, label_format):
+    def format_filename_prefix(self, prefix):
+        """处理文件名前缀中的日期格式"""
+        # 匹配 %date:format% 模式
+        def replace_date(match):
+            date_format = match.group(1)
+            # 转换ComfyUI日期格式到Python格式
+            py_format = date_format.replace('yyyy', '%Y').replace('MM', '%m').replace('dd', '%d')
+            return datetime.now().strftime(py_format)
+
+        return re.sub(r'%date:([^%]+)%', replace_date, prefix)
+
+    def process_by_combined_sku(self, groups, use_cache, label_format, filename_prefix):
         """按组合SKU分批处理（推荐模式）"""
-        
+
         all_image_batches = []
         all_label_batches = []
+        all_combined_skus = []  # 存储每个批次的完整文件名前缀
         info_lines = []
+
+        # 处理日期格式
+        processed_prefix = self.format_filename_prefix(filename_prefix)
         
         for idx, (combined_sku, group_data) in enumerate(groups.items(), 1):
             print(f"\n{'='*80}")
@@ -305,10 +328,14 @@ class ExcelSKULoader:
             # ===== 第四步：堆叠为批次 =====
             batch_tensor = torch.from_numpy(np.stack(batch_images))
             all_image_batches.append(batch_tensor)
-            
+
             labels_str = ",".join(batch_labels)
             all_label_batches.append(labels_str)
-            
+
+            # 生成完整的文件名前缀（包含路径和combined_sku）
+            full_filename = f"{processed_prefix}{combined_sku}"
+            all_combined_skus.append(full_filename)
+
             info_lines.append(f"✅ {combined_sku}: {len(batch_images)} 个SKU")
             print(f"\n   ✅ 批次完成: {len(batch_images)} 张图片")
             print(f"      标签: {labels_str}")
@@ -342,8 +369,8 @@ class ExcelSKULoader:
         for i, labels in enumerate(all_label_batches):
             print(f"   批次{i+1}: {labels}")
         print("="*80 + "\n")
-        
-        return (all_image_batches, all_label_batches, info_str)
+
+        return (all_image_batches, all_label_batches, info_str, all_combined_skus)
 
     def resize_and_pad(self, img, target_width, target_height):
         """
@@ -374,12 +401,15 @@ class ExcelSKULoader:
 
         return result
     
-    def process_all_in_one(self, groups, use_cache, label_format):
+    def process_all_in_one(self, groups, use_cache, label_format, filename_prefix):
         """所有图片合并为一个批次"""
-        
+
         all_images = []
         all_labels = []
         info_lines = []
+
+        # 处理日期格式
+        processed_prefix = self.format_filename_prefix(filename_prefix)
         
         for idx, (combined_sku, group_data) in enumerate(groups.items(), 1):
             print(f"\n🎯 [{idx}/{len(groups)}] 处理组合SKU: {combined_sku}")
@@ -403,10 +433,14 @@ class ExcelSKULoader:
         
         if not all_images:
             return self.create_empty_result()
-        
+
         images_tensor = torch.from_numpy(np.stack(all_images))
         labels_str = ",".join(all_labels)
-        
+
+        # all_in_one模式下，使用所有combined_sku合并命名
+        combined_sku_str = "_".join(list(groups.keys()))
+        full_filename = f"{processed_prefix}{combined_sku_str}"
+
         info_str = "\n".join([
             "="*60,
             "📊 Excel SKU 加载报告（全部合并）",
@@ -419,8 +453,8 @@ class ExcelSKULoader:
             "",
             "="*60
         ])
-        
-        return ([images_tensor], [labels_str], info_str)
+
+        return ([images_tensor], [labels_str], info_str, [full_filename])
     
     def parse_sku_groups(self, df, combined_col, sku_col, pcs_col, url_col, 
                         start_row, filter_sku=""):
@@ -548,7 +582,7 @@ class ExcelSKULoader:
         """创建空结果"""
         empty_img = np.zeros((512, 512, 3), dtype=np.float32)
         empty_tensor = torch.from_numpy(empty_img).unsqueeze(0)
-        return ([empty_tensor], [""], f"❌ {message}")
+        return ([empty_tensor], [""], f"❌ {message}", [""])
 
 
 # 节点映射
