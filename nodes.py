@@ -22,11 +22,11 @@ def is_url(path):
     path_lower = path.strip().lower()
     return path_lower.startswith('http://') or path_lower.startswith('https://')
 
-# 注册Excel文件夹
-excel_folder = os.path.join(folder_paths.get_input_directory(), "excel_files")
+# 注册Excel文件夹 - 直接使用input目录
+excel_folder = folder_paths.get_input_directory()
+# 确保目录存在
 if not os.path.exists(excel_folder):
     os.makedirs(excel_folder)
-folder_paths.add_model_folder_path("excel_files", excel_folder)
 
 class ExcelSKULoader:
     """
@@ -127,7 +127,10 @@ class ExcelSKULoader:
         return float("nan")
 
     @classmethod
-    def VALIDATE_INPUTS(cls, excel_file, **kwargs):
+    def VALIDATE_INPUTS(cls, **kwargs):
+        # 只验证 excel_file 参数
+        excel_file = kwargs.get('excel_file', '')
+
         # 验证文件路径
         if not excel_file or not excel_file.strip():
             return "请输入Excel文件路径或URL"

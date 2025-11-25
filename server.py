@@ -9,8 +9,9 @@ from aiohttp import web
 import server
 from server import PromptServer
 
-# Excel 文件保存目录
-excel_folder = os.path.join(folder_paths.get_input_directory(), "excel_files")
+# Excel 文件保存目录 - 直接使用input目录
+excel_folder = folder_paths.get_input_directory()
+print(f"📁 Excel上传目录 (get_input_directory): {excel_folder}")
 os.makedirs(excel_folder, exist_ok=True)
 
 @PromptServer.instance.routes.post("/excel_sku_loader/upload")
